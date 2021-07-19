@@ -7,3 +7,24 @@
 .answer {
      padding: 10px;
 }
+.resetBtn {
+     margin: 20px;
+     margin-bottom: 50px;
+     font-size: 20px;
+     color: white;
+     background-color: black;
+     width: 100px;
+}
+.submitBtn {
+     margin: 20px;
+     margin-bottom: 50px;
+     font-size: 20px;
+     color: white;
+     background-color: black;
+     width: 100px;
+}
+.score {
+     margin: 50px;
+     color: red;
+     font-size: 100px;
+}

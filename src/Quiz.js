@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './Quiz.module.css';
 import axios from 'axios';
 import {
@@ -10,63 +10,95 @@ import {
 
 export default function Quiz({ category, difficulty }) {
      const [questions, setQuestions] = useState();
-     const [score, setScore] = useState();
+     const [answers, setAnswers] = useState({});
+     const [score, setScore] = useState(0);
 
-     const quizesUrl = useMemo(() => {
-          const urlSearchParams = new URLSearchParams({
+     useEffect(() => {
+          const params = {
                amount: DEFAULT_NUMBER_OF_QUESTIONS,
-          });
+          };
 
           const [categoryLable, categoryId] = category;
 
           if (categoryLable !== ANY_CATEGORY) {
-               urlSearchParams.set('category', categoryId);
+               params.category = categoryId;
           }
 
           if (difficulty !== ANY_DIFFICULITY) {
-               urlSearchParams.set('difficulty', difficulty);
+               params.difficulty = difficulty && difficulty.toLowerCase();
           }
 
-          const queryString = urlSearchParams.toString();
+          return axios.get(API_URL, { params }).then(response => {
+               const randomizedQuestions = response.data.results.map(
+                    question => {
+                         const correctAnswerIndex = Math.round(
+                              Math.random() *
+                                   (question.incorrect_answers.length + 1)
+                         );
 
-          return `${API_URL}?${queryString}`;
+                         const randomizedAnswers = [
+                              ...question.incorrect_answers,
+                         ];
+                         randomizedAnswers.splice(
+                              correctAnswerIndex,
+                              0,
+                              question.correct_answer
+                         );
+
+                         return {
+                              ...question,
+                              randomizedAnswers,
+                         };
+                    }
+               );
+
+               setQuestions(randomizedQuestions);
+          });
      }, [difficulty, category]);
 
-     useEffect(
-          () =>
-               axios
-                    .get(quizesUrl)
-                    .then(response => setQuestions(response.data.results)),
-          [quizesUrl]
-     );
+     function handleSubmit() {
+          let resultScore = 0;
+          questions.forEach((question, index) => {
+               resultScore += answers[`answer_${index}`] ? 1 : 0;
+          });
 
-     const getRandomlyOrderedAnswers = useCallback(question => {
-          const correctAnswerIndex = Math.round(
-               Math.random() * (question.incorrect_answers.length + 1)
-          );
+          setScore(resultScore);
+     }
 
-          console.log({ correctAnswerIndex });
-          const answers = [...question.incorrect_answers];
-          answers.splice(correctAnswerIndex, 0, question.correct_answer);
-
-          return answers;
-     }, []);
+     function hanleReset() {
+          setScore(0);
+          setAnswers({});
+     }
 
      return (
-          <div>
+          <form>
                {questions?.map((question, index) => (
                     <>
-                         <div className={styles.question}>
-                              {index + 1}. {'' + question.question}
-                         </div>
-                         {getRandomlyOrderedAnswers(question).map(answer => (
+                         <div
+                              className={styles.question}
+                              dangerouslySetInnerHTML={{
+                                   __html: `${index + 1} ${question.question}`,
+                              }}
+                         />
+                         {question.randomizedAnswers.map(answer => (
                               <div className={styles.answer}>
                                    <input
-                                        // onChange={event =>
-                                        //      if(event.target.value === questions[index].correct_answer) {
-
-                                        //      }
-                                        // }
+                                        onChange={event => {
+                                             if (
+                                                  event.target.value ===
+                                                  question.correct_answer
+                                             ) {
+                                                  setAnswers({
+                                                       ...answers,
+                                                       [`answer_${index}`]: true,
+                                                  });
+                                             } else {
+                                                  setAnswers({
+                                                       ...answers,
+                                                       [`answer_${index}`]: false,
+                                                  });
+                                             }
+                                        }}
                                         type="radio"
                                         name={`answer_${index}`}
                                         value={answer}
@@ -76,6 +108,27 @@ export default function Quiz({ category, difficulty }) {
                          ))}
                     </>
                ))}
-          </div>
+               <div>
+                    {questions && (
+                         <div className={styles.score}>
+                              {score}/{questions.length}
+                         </div>
+                    )}
+                    <div>
+                         <input
+                              className={styles.resetBtn}
+                              onClick={hanleReset}
+                              type="reset"
+                              value="Reset"
+                         />
+                         <input
+                              className={styles.submitBtn}
+                              type="button"
+                              value="Submit"
+                              onClick={handleSubmit}
+                         />
+                    </div>
+               </div>
+          </form>
      );
 }
