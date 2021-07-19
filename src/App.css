@@ -33,10 +33,18 @@
      }
 }
 
-* {
-     font-family: sans-serif;
-}
 .FlexDiv {
      display: flex;
      justify-content: space-around;
+}
+
+.startBtn {
+     margin: 0 auto;
+     text-decoration: none;
+     color: black;
+     font-size: 100px;
+}
+.btnDiv {
+     margin: 0 auto;
+     text-align: center;
 }
